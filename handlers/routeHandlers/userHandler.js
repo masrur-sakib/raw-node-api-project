@@ -9,6 +9,7 @@
 const data = require("../../lib/data");
 const { hash } = require("../../assets/utilities");
 const { parseJSON } = require("../../assets/utilities");
+const tokenHandler = require("./tokenHandler");
 
 // Module Scaffolding
 const handler = {};
@@ -101,15 +102,29 @@ handler._user.get = (requestProperties, callback) => {
       : false;
 
   if (phone) {
-    // Fine the user
-    data.read("users", phone, (err, usr) => {
-      const user = { ...parseJSON(usr) };
-      if (!err && user) {
-        delete user.password;
-        callback(200, user);
+    // Verify token
+    const token =
+      typeof requestProperties.headersObject.token === "string"
+        ? requestProperties.headersObject.token
+        : false;
+
+    tokenHandler._token.verify(token, phone, (tokenId) => {
+      if (tokenId) {
+        // Fine the user
+        data.read("users", phone, (err, usr) => {
+          const user = { ...parseJSON(usr) };
+          if (!err && user) {
+            delete user.password;
+            callback(200, user);
+          } else {
+            callback(404, {
+              error: "Requested user not found (2)",
+            });
+          }
+        });
       } else {
-        callback(404, {
-          error: "Requested user not found (2)",
+        callback(403, {
+          error: "Authentication failed.",
         });
       }
     });
@@ -120,7 +135,6 @@ handler._user.get = (requestProperties, callback) => {
   }
 };
 // PUT Method - User
-// Todo - Implement Authentication
 handler._user.put = (requestProperties, callback) => {
   const phone =
     typeof requestProperties.body.phone === "string" &&
@@ -148,35 +162,49 @@ handler._user.put = (requestProperties, callback) => {
 
   if (phone) {
     if (firstName || lastName || password) {
-      // Check if the user exists or not
-      data.read("users", phone, (err, usrData) => {
-        const userData = { ...parseJSON(usrData) };
-        if (!err && userData) {
-          if (firstName) {
-            userData.firstName = firstName;
-          }
-          if (lastName) {
-            userData.lastName = lastName;
-          }
-          if (password) {
-            userData.password = hash(password);
-          }
+      // Verify token
+      const token =
+        typeof requestProperties.headersObject.token === "string"
+          ? requestProperties.headersObject.token
+          : false;
 
-          // Update Database
-          data.update("users", phone, userData, (err) => {
-            if (!err) {
-              callback(200, {
-                error: "User data updated successfully.",
+      tokenHandler._token.verify(token, phone, (tokenId) => {
+        if (tokenId) {
+          // Check if the user exists or not
+          data.read("users", phone, (err, usrData) => {
+            const userData = { ...parseJSON(usrData) };
+            if (!err && userData) {
+              if (firstName) {
+                userData.firstName = firstName;
+              }
+              if (lastName) {
+                userData.lastName = lastName;
+              }
+              if (password) {
+                userData.password = hash(password);
+              }
+
+              // Update Database
+              data.update("users", phone, userData, (err) => {
+                if (!err) {
+                  callback(200, {
+                    error: "User data updated successfully.",
+                  });
+                } else {
+                  callback(500, {
+                    error: "There was a problem in server side",
+                  });
+                }
               });
             } else {
-              callback(500, {
-                error: "There was a problem in server side",
+              callback(404, {
+                error: "Requested user not found (2)",
               });
             }
           });
         } else {
-          callback(404, {
-            error: "Requested user not found (2)",
+          callback(403, {
+            error: "Authentication failed.",
           });
         }
       });
@@ -192,7 +220,6 @@ handler._user.put = (requestProperties, callback) => {
   }
 };
 // DELETE Method - User
-// Todo - Implement Authentication
 handler._user.delete = (requestProperties, callback) => {
   // Check if the phone number is valid
   const phone =
@@ -201,23 +228,37 @@ handler._user.delete = (requestProperties, callback) => {
       ? requestProperties.queryStringObject.get("phone")
       : false;
   if (phone) {
-    // Check if the user exists or not
-    data.read("users", phone, (err, userData) => {
-      if (!err && userData) {
-        data.delete("users", phone, (err) => {
-          if (!err) {
-            callback(200, {
-              message: "User deleted successfully.",
+    // Verify token
+    const token =
+      typeof requestProperties.headersObject.token === "string"
+        ? requestProperties.headersObject.token
+        : false;
+
+    tokenHandler._token.verify(token, phone, (tokenId) => {
+      if (tokenId) {
+        // Check if the user exists or not
+        data.read("users", phone, (err, userData) => {
+          if (!err && userData) {
+            data.delete("users", phone, (err) => {
+              if (!err) {
+                callback(200, {
+                  message: "User deleted successfully.",
+                });
+              } else {
+                callback(500, {
+                  error: "Error! Problem in server side (2)",
+                });
+              }
             });
           } else {
             callback(500, {
-              error: "Error! Problem in server side (2)",
+              error: "Error! Problem in server side.",
             });
           }
         });
       } else {
-        callback(500, {
-          error: "Error! Problem in server side.",
+        callback(403, {
+          error: "Authentication failed.",
         });
       }
     });
