@@ -3,11 +3,15 @@ const http = require("http");
 const { handleReqRes } = require("./assets/handleReqRes");
 const environment = require("./assets/environments");
 const data = require("./lib/data");
+const { sendTwilioSms } = require("./assets/notifications");
 
-// App Object - Module Scaffolding
+// Module Scaffolding
 const app = {};
 
-// lib.create = (dir, file, data, callback) => {
+// Twilio sms sending function - Remove after work
+sendTwilioSms("01747020380", "Hello World", (err) => {
+  console.log("Twilio Request Status: ", err);
+});
 
 // Create Server
 app.createServer = () => {
