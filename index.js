@@ -1,28 +1,26 @@
+/*
+ * Name/Title: Initial Project File
+ * Description: Initial file to start the node server and workers
+ * Developer: Masrur Sakib
+ * Date: 01/06/2021
+ */
+
 // Dependencies
-const http = require("http");
-const { handleReqRes } = require("./assets/handleReqRes");
-const environment = require("./assets/environments");
-const data = require("./lib/data");
-const { sendTwilioSms } = require("./assets/notifications");
+const server = require("./lib/server");
+const workers = require("./lib/worker");
 
 // Module Scaffolding
 const app = {};
 
-// Twilio sms sending function - Remove after work
-sendTwilioSms("01747020380", "Hello World", (err) => {
-  console.log("Twilio Request Status: ", err);
-});
+app.init = () => {
+  // Start the server
+  server.init();
 
-// Create Server
-app.createServer = () => {
-  const server = http.createServer(app.handleReqRes);
-  server.listen(environment.port, () => {
-    console.log(`Listening to port ${environment.port}`);
-  });
+  // Start the workers
+  workers.init();
 };
 
-// Function that handles Request & Response
-app.handleReqRes = handleReqRes;
+app.init();
 
-// Start the Server
-app.createServer();
+// Module Export
+module.exports = app;

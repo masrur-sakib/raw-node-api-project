@@ -20,7 +20,7 @@ const handler = {};
 // Function that handles Request & Response
 handler.handleReqRes = (req, res) => {
   // Handle Request
-  baseURL = req.protocol + "://" + req.headers.host + "/";
+  const baseURL = req.protocol + "://" + req.headers.host + "/";
   const parsedUrl = new URL(req.url, baseURL);
   const path = parsedUrl.pathname;
   const trimmedPath = path.replace(/^\/+|\/+$/g, "");
